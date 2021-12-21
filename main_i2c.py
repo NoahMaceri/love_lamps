@@ -2,7 +2,7 @@
 #CONFIDENTAL - DO NOT SHARE
 
 import RPi.GPIO as GPIO
-import adafruit_character_lcd.character_lcd as characterlcd
+import adafruit_character_lcd.character_lcd_i2c as character_lcd
 from adafruit_led_animation.animation.blink import Blink
 from adafruit_led_animation.animation.comet import Comet
 from adafruit_led_animation.animation.rainbowsparkle import RainbowSparkle
@@ -12,7 +12,7 @@ from adafruit_led_animation.animation.rainbowcomet import RainbowComet
 from adafruit_led_animation.sequence import AnimationSequence
 from adafruit_led_animation.sequence import AnimateOnce
 from adafruit_led_animation.color import *
-import smtplib, ssl, imaplib, time, board, neopixel, threading, digitalio, email
+import smtplib, ssl, imaplib, time, board, neopixel, threading, digitalio, email, busio
 
 #The GPIO is setup as BCM through the LCD init function, use GPIO names not pins numbers
 

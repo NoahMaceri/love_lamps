@@ -2,7 +2,6 @@
 #CONFIDENTAL - DO NOT SHARE
 
 import RPi.GPIO as GPIO
-import adafruit_character_lcd.character_lcd as characterlcd
 from adafruit_led_animation.animation.blink import Blink
 from adafruit_led_animation.animation.comet import Comet
 from adafruit_led_animation.animation.rainbowsparkle import RainbowSparkle
@@ -16,32 +15,53 @@ import smtplib, ssl, imaplib, time, board, neopixel, threading, digitalio, email
 
 #The GPIO is setup as BCM through the LCD init function, use GPIO names not pins numbers
 
-#RGB Strip Setup
-pixel_pin = board.D12 #GPIO 12
-num_pixels = 60 # The number of NeoPixels
-ORDER = neopixel.GRB
 
-#LCD Pin out
-lcd_rs = digitalio.DigitalInOut(board.D25)
-lcd_en = digitalio.DigitalInOut(board.D24)
-lcd_d4 = digitalio.DigitalInOut(board.D23)
-lcd_d5 = digitalio.DigitalInOut(board.D17)
-lcd_d6 = digitalio.DigitalInOut(board.D18)
-lcd_d7 = digitalio.DigitalInOut(board.D22)
-lcd_backlight = 2
+#LCD SETUP
+i2C_LCD = False
 
 # Define LCD column and row size for 16x2 LCD.
 lcd_columns = 16
 lcd_rows = 2
 
-#Setup LCD screen (disable blink and cursor bc its annoying)
-lcd = characterlcd.Character_LCD_Mono(lcd_rs, lcd_en, lcd_d4, lcd_d5, lcd_d6, lcd_d7, lcd_columns, lcd_rows)
+if i2C_LCD:
+    import adafruit_character_lcd.character_lcd_i2c as character_lcd
+    import busio
+
+    # LCD Pin out (I2C Conf)
+    i2c = busio.I2C(board.SCL, board.SDA)
+
+    # Setup LCD screen
+    lcd = character_lcd.Character_LCD_I2C(i2c, lcd_columns, lcd_rows)
+
+else:
+    import adafruit_character_lcd.character_lcd as characterlcd
+
+    # NPN transistor - Emitter connected to ground of LCD backlight, Base connected to GPIO 2, Collector connected to ground
+    # This effectively toggles the backlight on and off on the LCD
+    lcd_backlight = 2
+    GPIO.setup(lcd_backlight, GPIO.OUT)
+
+    # LCD Pin out
+    lcd_rs = digitalio.DigitalInOut(board.D25)
+    lcd_en = digitalio.DigitalInOut(board.D24)
+    lcd_d4 = digitalio.DigitalInOut(board.D23)
+    lcd_d5 = digitalio.DigitalInOut(board.D17)
+    lcd_d6 = digitalio.DigitalInOut(board.D18)
+    lcd_d7 = digitalio.DigitalInOut(board.D22)
+
+    # Setup LCD screen (disable blink and cursor bc its annoying)
+    lcd = characterlcd.Character_LCD_Mono(lcd_rs, lcd_en, lcd_d4, lcd_d5, lcd_d6, lcd_d7, lcd_columns, lcd_rows)
+
+#General LCD Setup
 lcd.clear()
 lcd.blink = False
 lcd.cursor = False
-#NPN transistor - Emitter connected to ground of LCD backlight, Base connected to GPIO 2, Collector connected to ground
-#This effectively toggles the backlight on and off on the LCD
-GPIO.setup(lcd_backlight, GPIO.OUT)
+
+
+#RGB Strip Setup
+pixel_pin = board.D12 #GPIO 12
+num_pixels = 60 # The number of NeoPixels
+ORDER = neopixel.GRB
 
 #Buttons
 RIGHT = 4
@@ -75,11 +95,23 @@ deviceUser = userList[0]
 targetUserIndex = 0 #Now this might seem stupid but trust me, it is
 targetUser = userList[targetUserIndex]
 
+#Backlight toggle
+def backlight_toggle(state):
+    if i2C_LCD and state:
+        lcd.backlight = True
+    elif i2C_LCD and not state:
+        lcd.backlight = False
+
+    if not i2C_LCD and state:
+        GPIO.output(lcd_backlight, True)
+    elif not i2C_LCD and not state:
+        GPIO.output(lcd_backlight, False)
+
 #Tab through users
 def user_button(channel):
     global targetUserIndex
     global targetUser
-    GPIO.output(lcd_backlight, True)
+    backlight_toggle(True)
     if targetUserIndex == 3:
         targetUserIndex = 0
     else:
@@ -91,7 +123,7 @@ def user_button(channel):
 #Tab through messages
 def message_button(channel):
     global message_index
-    GPIO.output(lcd_backlight, True)
+    backlight_toggle(True)
     if message_index == 8:
         message_index = 0
     else:
@@ -102,7 +134,7 @@ def message_button(channel):
 #When the enter button is pressed it displays what is being sent, sends it, then lets the user know
 def send_button(channel):
     global message_index
-    GPIO.output(lcd_backlight, True)
+    backlight_toggle(True)
     lcd.clear()
     lcd.message = "To: " + targetUser + "\n" + message_list[message_index]
     time.sleep(0.25)
@@ -138,7 +170,7 @@ def off():
     global pixels
     pixels.fill((0, 0, 0))
     pixels.show()
-    GPIO.output(lcd_backlight, False)
+    backlight_toggle(False)
     lcd.clear()
 
 #So here's the thing, this code is hot garbage and has band-aids on band-aids but guess what it works
@@ -146,7 +178,7 @@ if __name__ == "__main__":
 
     #Version info
     lcd.clear()
-    GPIO.output(lcd_backlight, True)
+    backlight_toggle(True)
     lcd.message = "  Message Lamp\n  Version 0.95"
     time.sleep(5)
 
@@ -188,7 +220,7 @@ if __name__ == "__main__":
         if oldEmail != fullEmail:
             #check for receiver name, if not found, do not update
             if emailSplit[0] == deviceUser:
-                GPIO.output(lcd_backlight, True)
+                backlight_toggle(True)
                 #Animations have to be recreated every time bc of the animation library
                 if latestEmail.find(message_list[0]) > 0: #I love you
                     heartbeat_pulse = Pulse(pixels, speed=0.01, color=RED, period=1.25)

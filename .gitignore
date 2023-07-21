@@ -1,4 +1,8 @@
-#PyCharm
-/.idea
-/venv
-test.py
+# Protect private headers
+src/private.hpp
+
+# Platform IO
+.pio/
+
+# VSCODE
+.vscode/

@@ -1,10 +1,13 @@
-# LampProject
-Simple Lamp using Python/Raspberry Pi/Neopixel
+# Love Lamps
+## Description
+This repo contains the project files and source code for the Love Lamps project.
 
-Required PIP Packages:
-sudo pip3 install adafruit-circuitpython-charlcd adafruit-circuitpython-neopixel adafruit-circuitpython-led-animation
+## TODO
+[x] MQTT backend
+[x] Neopixel backend
+[] Neopixel animations
+[] OLED control
+[] User control
 
-To enable autostart:
-Add "sudo python3 ~/main.py" to ~/.bashrc (without quotes)
-Enable automatic console login with raspi-config
-Add "pi       ALL=(ALL) NOPASSWD: python3" to sudoers file (sudo visudo to edit sudoers file and without quotes)
+## Versions
+0.1.0 - MQTT and Neopixel backends working

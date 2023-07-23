@@ -1,0 +1,7 @@
+3v3 -> NeoPix5V, OLED_VCC
+GND -> NeoPixGND, OLED_GBD, EnterButton_P2, SwitchButton_P2
+D15 -> NeoPixData
+D21 -> OLED_SDA
+D22 -> OLED_SCL
+D32 -> EnterButton_P1
+D33 -> SwitchButton_P1

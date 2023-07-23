@@ -8,11 +8,13 @@
 #include <WiFi.h>
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
+#include <ESP32TimerInterrupt.hpp>
 
 // INTERNAL LIBRARIES
 #include "private.hpp"  // Passwords, keys, server info, etc.
 #include "neopix.hpp"
 #include "oled.hpp"
+#include "messages.hpp"
 
 // BOARD SPECIFIC
 #define BOARD_ID "testb1"
@@ -26,6 +28,8 @@ std::string mqtt_topic_self = mqtt_base_topic + "/" + BOARD_ID;
 WiFiClient mqtt_wifi_driver;
 PubSubClient mqtt_client(mqtt_wifi_driver);
 void mqtt_callback(char* topic, byte* payload, unsigned int length);
+bool mqtt_send_pending = false;
+unsigned short mqtt_message_idx = 0;  // TODO: Repair the state machine so we don't need this
 
 // UNIX EPOCH TIME
 const char* ntpServer = "pool.ntp.org";
@@ -43,6 +47,14 @@ void button_handler(int button_pin);
 // Drive Objects
 NeoPix* neopix;
 OLED* oled;
+
+// OLED
+bool update_oled = false;
+bool clear_oled = false;
+
+// TIMER
+ESP32Timer ITimer(1);
+bool IRAM_ATTR TimerHandler1(void * timerNo);
 
 void setup() {
   // SERIAL 
@@ -92,7 +104,7 @@ void setup() {
   while (!mqtt_client.connected()) {
       String client_id = "cs-";
       client_id += String(WiFi.macAddress());
-      Serial.printf("The client %s connects to the public MQTT broker\n", client_id.c_str());
+      Serial.printf("MQTT ID: %s\n", client_id.c_str());
       if (mqtt_client.connect(client_id.c_str(), MQTT_USER, MQTT_PASS)) {
           Serial.println("Conneceted to MQTT broker");
       } else {
@@ -105,13 +117,64 @@ void setup() {
   Serial.print("Subscribed to topic: ");
   Serial.println(mqtt_topic_self.c_str());
   Serial.println("-- MQTT Strapped --");
+
+  // TIMER
+  Serial.println("-- Strapping Timer --");
+  ITimer.attachInterruptInterval(OLED_TIMEOUT_MS * 1000, TimerHandler1);
+  Serial.println("-- Timer Strapped --");
+
+  Serial.println("-- Setup Complete --");
+  
 }
 
 void loop()
 {
   // MQTT
   mqtt_client.loop();
+
+  if(mqtt_send_pending) {
+    if(mqtt_message_idx > 0 && mqtt_message_idx <= MSG_MAX_IDX) {
+      // send message
+      StaticJsonDocument<200> doc;
+      doc["message_idx"] = mqtt_message_idx;
+      char buffer[200];
+      serializeJson(doc, buffer);
+      mqtt_client.publish(mqtt_topic_target.c_str(), buffer);
+      mqtt_send_pending = false;
+      oled->set_state(100);
+      update_oled = true;
+    }
+    else {
+      // invalid message
+      mqtt_send_pending = false;
+      oled->set_state(101);
+      update_oled = true;
+    }
+    mqtt_message_idx = 0;
+  }
+
+  // OLED
+  if(update_oled) {
+    // if timer is running, stop it
+    ITimer.stopTimer();
+    oled->update();
+    update_oled = false;
+    // update timer
+    ITimer.restartTimer();
+  }
+  if(clear_oled) {
+    oled->clear();
+    clear_oled = false;
+    // reset state
+    oled->set_state(0);
+  }
 }
+
+bool IRAM_ATTR TimerHandler1(void * timerNo) {
+  clear_oled = true;
+  return true;
+}
+
 
 void button_handler(int button_pin) {
   // debounce
@@ -121,36 +184,28 @@ void button_handler(int button_pin) {
   button_last_pressed = millis();
   // check if button is pressed
   if(button_pin == ENTER_BUTTON_PIN) {
-    Serial.println("Enter button pressed");
-    oled->current_state = 1;
-    oled->update();
+    // send message
+    mqtt_message_idx = oled->get_state();
+    oled->set_state(99);
+    mqtt_send_pending = true;
   }
   else if(button_pin == ALT_BUTTON_PIN) {
-    Serial.println("Alt button pressed");
-    oled->current_state = 0;
-    oled->update();
+    // switch message to be sent
+    oled->next_state();
   }
-  else {
-    Serial.println("Unknown button pressed");
-  }
+  update_oled = true;
 }
 
 void mqtt_callback(char* topic, byte* payload, unsigned int length) {
-  Serial.print("Message arrived [");
-  Serial.print(topic);
-  Serial.println("] ");
-  // deseialize JSON
+  // stop timer
+  ITimer.stopTimer();
   StaticJsonDocument<200> doc;
   deserializeJson(doc, payload, length);
   JsonObject json_obj = doc.as<JsonObject>();
 
   unsigned short message_idx = json_obj["message_idx"];
 
-  Serial.print("Message index: ");
-  Serial.println(message_idx);
-
   process_message(message_idx);
-
 }
 
 unsigned long epoch_get_time() {
@@ -166,36 +221,35 @@ unsigned long epoch_get_time() {
 
 // change screen and LEDs
 void process_message(unsigned short message_idx) {
+  // Update OLED
+  oled->set_state(message_idx);
+  oled->update();
+  update_oled = true;
   // switch case
   switch(message_idx) {
-    case 0: // Clear
-      Serial.println("Received message 0");
+    case CLEAR_IDX:
       neopix->clear();
       FastLED.show();  // Update the pixel display
       break;
-    case 1: // Rainbow
-      Serial.println("Received message 1");
+    case ILY_IDX:
+      neopix->pulse(CRGB::Red);
+      break;
+    case HELLO_IDX:
       neopix->rainbow();
-      FastLED.show();  // Update the pixel display
       break;
-    case 2: // Red
-      Serial.println("Received message 2");
-      neopix->pulse(CRGB::PowderBlue);
-      FastLED.show();  // Update the pixel display
+    case GN_IDX: 
+      neopix->pulse(CRGB::DarkSlateBlue);
       break;
-    case 3: // Green
-      Serial.println("Received message 3");
-      neopix->pulse(CRGB::Green);
-      FastLED.show();  // Update the pixel display
+    case GM_IDX:
+      neopix->visor(CRGB::MistyRose);
       break;
-    case 4: // Blue
-      Serial.println("Received message 4");
-      neopix->pulse(CRGB::Blue);
-      FastLED.show();  // Update the pixel display
+    case IMY_IDX:
+      neopix->chase(CRGB::Purple);
+      break;
+    case IH_IDX:
+      neopix->pulse(CRGB::Amethyst);
       break;
     default:
-      Serial.println("Received unknown message");
-      Serial.println(message_idx);
       process_message(0);
       break;
   }

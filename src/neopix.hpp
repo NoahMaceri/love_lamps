@@ -11,7 +11,7 @@
 #define NEOPIX_NUM_LEDS     12
 #define NEOPIX_BRIGHTNESS   20
 #define NEOPIX_ANIM_LEN     5000
-#define NEOPIX_PULSE_STEP   10
+#define NEOPIX_PULSE_STEP   2
 
 class NeoPix {
 

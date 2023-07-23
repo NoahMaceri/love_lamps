@@ -19,11 +19,15 @@ NeoPix::~NeoPix() {
 
 void NeoPix::clear()
 {
-  // slowly fade out
+  // slowly fade out 
   for(int i = 0; i < 255; i++) {
-    fadeToBlackBy(leds, NEOPIX_NUM_LEDS, 10);
+    for(int j = 0; j < NEOPIX_NUM_LEDS; j++) {
+      leds[j].r -= 1;
+      leds[j].g -= 1;
+      leds[j].b -= 1;
+    }
     FastLED.show();  // Update the pixel display
-    delay(10);
+    delay(2);
   }
 }
 

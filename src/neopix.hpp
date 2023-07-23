@@ -12,7 +12,7 @@
 #define NEOPIX_BRIGHTNESS   40
 #define NEOPIX_ANIM_LEN     5000
 #define NEOPIX_PULSE_DELAY  20
-#define NEOPIX_CHASE_DELAY  10
+#define NEOPIX_CHASE_DELAY  20
 #define NEOPIX_TRAIL_DELAY  50
 
 class NeoPix {

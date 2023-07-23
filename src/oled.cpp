@@ -9,7 +9,6 @@ OLED::OLED() {
         return;
     }
     // Init display
-    display.setRotation(2);
     display.setTextColor(SSD1306_WHITE);
 
     // Clear the buffer

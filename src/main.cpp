@@ -15,10 +15,9 @@
 #include "neopix.hpp"
 #include "oled.hpp"
 #include "messages.hpp"
+#include "ver.h"
 
 // BOARD SPECIFIC
-#define BOARD_ID "testb1"
-#define BOARD_TARGET "testb2"
 void process_message(unsigned short message_idx);
 
 // MQTT
@@ -59,6 +58,9 @@ bool IRAM_ATTR TimerHandler1(void * timerNo);
 void setup() {
   // SERIAL 
   Serial.begin(115200);
+  char* version = new char[42];
+  sprintf(version, "---- Love Lamps v%d.%d.%d ----", VER_MAJOR, VER_MINOR, VER_PATCH);
+  Serial.println(version);
   
   // NEOPXIEL
   Serial.println("-- Strapping NeoPixel --");
@@ -87,13 +89,13 @@ void setup() {
   // Wifi
   Serial.println("-- Strapping Wifi-- ");
   WiFi.begin(WIFI_SSID, WIFI_PASS);
-  Serial.print("Connecting to WiFi");
+  Serial.print("    - Connecting to WiFi");
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
   }
   Serial.println();
-  Serial.print("Connected to the WiFi network with IP Address: ");
+  Serial.print("    - Connected to the WiFi network with IP Address: ");
   Serial.println(WiFi.localIP());
   Serial.println("-- Wifi Strapped --");
 
@@ -104,17 +106,17 @@ void setup() {
   while (!mqtt_client.connected()) {
       String client_id = "cs-";
       client_id += String(WiFi.macAddress());
-      Serial.printf("MQTT ID: %s\n", client_id.c_str());
+      Serial.printf("    - MQTT ID: %s\n", client_id.c_str());
       if (mqtt_client.connect(client_id.c_str(), MQTT_USER, MQTT_PASS)) {
-          Serial.println("Conneceted to MQTT broker");
+          Serial.println("    - Conneceted to MQTT broker");
       } else {
-          Serial.print("Failed to connect, rc=");
+          Serial.print("    - Failed to connect, rc=");
           Serial.print(mqtt_client.state());
           delay(2000);
       }
   }
   mqtt_client.subscribe(mqtt_topic_self.c_str());
-  Serial.print("Subscribed to topic: ");
+  Serial.print("    - Subscribed to topic: ");
   Serial.println(mqtt_topic_self.c_str());
   Serial.println("-- MQTT Strapped --");
 

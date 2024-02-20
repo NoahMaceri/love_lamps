@@ -16,7 +16,6 @@
 #include <Arduino_ESP32_OTA.h>
 
 // INTERNAL
-#include "private.hpp"  // Passwords, keys, server info, etc.
 #include "neopix.hpp"
 #include "oled.hpp"
 #include "messages.hpp"
@@ -49,6 +48,10 @@ String WIFI_SSID;
 String WIFI_PASS;
 String BOARD_ID;
 String BOARD_TARGET;
+String MQTT_BROKER;
+String MQTT_USER;
+String MQTT_PASS;
+int MQTT_PORT;
 String ota_url;
 String ota_ver;
 char output_buffer[254];
@@ -174,14 +177,20 @@ void setup() {
   fail_counter = 0;
 
   // MQTT
+  preferences.begin("love_lamps", false);
+  MQTT_BROKER = preferences.getString("mqtt_server");
+  MQTT_USER = preferences.getString("mqtt_user");
+  MQTT_PASS = preferences.getString("mqtt_password");
+  MQTT_PORT = preferences.getInt("mqtt_port");
+  preferences.end();
   Log.verboseln("Strapping MQTT");
-  mqtt_client.setServer(MQTT_BROKER, MQTT_PORT);
+  mqtt_client.setServer(MQTT_BROKER.c_str(), MQTT_PORT);
   mqtt_client.setCallback(mqtt_callback);
   while (!mqtt_client.connected()) {
     String client_id = "cs-";
     client_id += String(WiFi.macAddress());
     Log.verboseln("MQTT ID: %s", client_id.c_str());
-    if (mqtt_client.connect(client_id.c_str(), MQTT_USER, MQTT_PASS)) {
+    if (mqtt_client.connect(client_id.c_str(), MQTT_USER.c_str(), MQTT_PASS.c_str())) {
         Log.verboseln("Conneceted to MQTT broker");
     } else {
       Log.verboseln("Failed to connect, rc=%s", mqtt_client.state());
@@ -266,7 +275,7 @@ void loop() {
       String client_id = "cs-";
       client_id += String(WiFi.macAddress());
       Log.verboseln("MQTT ID: %s", client_id.c_str());
-      if (mqtt_client.connect(client_id.c_str(), MQTT_USER, MQTT_PASS)) {
+      if (mqtt_client.connect(client_id.c_str(), MQTT_USER.c_str(), MQTT_PASS.c_str())) {
           Log.verboseln("Conneceted to MQTT broker");
       } else {
         Log.verboseln("Failed to connect, rc=%s", mqtt_client.state());

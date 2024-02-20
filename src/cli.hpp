@@ -29,7 +29,7 @@ private:
     Command board_info;
     Command clear_nvs;
 
-    void configCommand(String ssid, String password, String target, String board_id);
+    void configCommand(String ssid, String password, String target, String board_id, String mqtt_server, int mqtt_port, String mqtt_user, String mqtt_password);
     void resetCommand();
     void toggleDebugCommand();
     void boardInfoCommand();

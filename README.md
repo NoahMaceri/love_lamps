@@ -12,7 +12,8 @@ This repo contains the project files and source code for the Love Lamps project.
 - [X] Configuration via external GUI
 - [X] Persistant configuration
 - [X] Better logging
-- [X] Serial commands
+- [X] CLI
+- [X] OTA
 - [ ] Better Neopixel animations
 
 ## Versions
@@ -45,3 +46,9 @@ This repo contains the project files and source code for the Love Lamps project.
 0.3.3 - Fixed command response time
 
 0.3.4 - Added board info command
+
+0.4.0 - Added CLI
+
+0.4.1 - Added OTA
+
+0.4.2 - Updated configurator and removed private.hpp (moved everything to NVS)

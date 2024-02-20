@@ -8,6 +8,10 @@ CLI::CLI() {
     this->config.addPosArg("password");
     this->config.addPosArg("target");
     this->config.addPosArg("board_id");
+    this->config.addPosArg("mqtt_server");
+    this->config.addPosArg("mqtt_port");
+    this->config.addPosArg("mqtt_user");
+    this->config.addPosArg("mqtt_password");
     this->reset = cli.addCmd("reset");
     this->toggle_debug = cli.addCmd("toggle_debug");
     this->board_info = cli.addCmd("board_info");
@@ -54,7 +58,11 @@ void CLI::process_commands() {
             String password = c.getArg("password").getValue();
             String target = c.getArg("target").getValue();
             String board_id = c.getArg("board_id").getValue();
-            configCommand(ssid, password, target, board_id);
+            String mqtt_server = c.getArg("mqtt_server").getValue();
+            int mqtt_port = c.getArg("mqtt_port").getValue().toInt();
+            String mqtt_user = c.getArg("mqtt_user").getValue();
+            String mqtt_password = c.getArg("mqtt_password").getValue();
+            configCommand(ssid, password, target, board_id, mqtt_server, mqtt_port, mqtt_user, mqtt_password);
         }
         else if (c == reset) {
             resetCommand();
@@ -81,7 +89,7 @@ void CLI::process_commands() {
 }
 
 
-void CLI::configCommand(String ssid, String password, String target, String board_id) {
+void CLI::configCommand(String ssid, String password, String target, String board_id, String mqtt_server, int mqtt_port, String mqtt_user, String mqtt_password) {
     nvs_flash_erase(); // erase the NVS partition and...
     nvs_flash_init(); // initialize the NVS partition.
 
@@ -90,6 +98,10 @@ void CLI::configCommand(String ssid, String password, String target, String boar
     preferences.putString("wifi_pass", password);
     preferences.putString("board_target", target);
     preferences.putString("board_id", board_id);
+    preferences.putString("mqtt_server", mqtt_server);
+    preferences.putInt("mqtt_port", mqtt_port);
+    preferences.putString("mqtt_user", mqtt_user);
+    preferences.putString("mqtt_password", mqtt_password);
     preferences.end();
 
     preferences.begin("love_lamps", true);

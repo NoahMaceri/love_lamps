@@ -260,9 +260,9 @@ void OLED::update_anim() {
         case FAILED_IDX:
             for(uint8_t i = 0; i < letter_x_allArray_LEN; i++) {
                 display.drawBitmap(0, 0, letter_x_allArray[i], 32, 32, SSD1306_WHITE);
-                display.setCursor(40 + ((OLED_WIDTH - 40) - (strlen("Failed") * 12)) / 2, 0);
+                display.setCursor(static_cast<int16_t>(40 + ((OLED_WIDTH - 40) - (strlen("Failed") * 12)) / 2), 0);
                 display.println("Failed");
-                display.setCursor(40 + ((OLED_WIDTH - 40) - (strlen("to send!") * 12)) / 2, 16);
+                display.setCursor(static_cast<int16_t>(40 + ((OLED_WIDTH - 40) - (strlen("to send!") * 12)) / 2), 16);
                 display.println("to send!");
                 display.display();
                 if(i != letter_x_allArray_LEN - 1) {
